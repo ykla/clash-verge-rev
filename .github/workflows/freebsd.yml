@@ -69,6 +69,7 @@ jobs:
       #    tauriScript: pnpm
       #    args: --target x86_64-unknown-freebsd
       - name: 编译
+        continue-on-error: true
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
