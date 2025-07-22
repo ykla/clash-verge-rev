@@ -5,7 +5,6 @@ on: [workflow_dispatch]
 jobs:
   alpha-x64-freebsd:
       runs-on: ubuntu-latest
-      if: ${{ github.event_name == 'push' && github.ref_name == 'stable' }} # skip-master
       steps:
       - uses: actions/checkout@v4
         with:
