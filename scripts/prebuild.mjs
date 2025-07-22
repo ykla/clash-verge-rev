@@ -26,6 +26,7 @@ const PLATFORM_MAP = {
   "armv7-unknown-linux-gnueabihf": "linux",
   "riscv64gc-unknown-linux-gnu": "linux",
   "loongarch64-unknown-linux-gnu": "linux",
+  "x86_64-unknown-freebsd": "freebsd",
 };
 const ARCH_MAP = {
   "x86_64-pc-windows-msvc": "x64",
@@ -39,6 +40,7 @@ const ARCH_MAP = {
   "armv7-unknown-linux-gnueabihf": "arm",
   "riscv64gc-unknown-linux-gnu": "riscv64",
   "loongarch64-unknown-linux-gnu": "loong64",
+  "x86_64-unknown-freebsd": "x64",
 };
 
 const arg1 = process.argv.slice(2)[0];
@@ -72,6 +74,7 @@ const META_ALPHA_MAP = {
   "linux-arm": "mihomo-linux-armv7",
   "linux-riscv64": "mihomo-linux-riscv64",
   "linux-loong64": "mihomo-linux-loong64",
+  "freebsd-x64": "mihomo-freebsd-amd64-compatible",
 };
 
 // Fetch the latest alpha release version from the version.txt file
@@ -119,6 +122,7 @@ const META_MAP = {
   "linux-arm": "mihomo-linux-armv7",
   "linux-riscv64": "mihomo-linux-riscv64",
   "linux-loong64": "mihomo-linux-loong64",
+  "freebsd-x64": "mihomo-freebsd-amd64-compatible",
 };
 
 // Fetch the latest release version from the version.txt file
