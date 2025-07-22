@@ -60,18 +60,23 @@ jobs:
           pnpm i
           pnpm run prebuild x86_64-unknown-freebsd
 
-      - name: Tauri build
-        continue-on-error: true
-        uses: tauri-apps/tauri-action@v0
+      #- name: Tauri build
+      #  continue-on-error: true
+      #  uses: tauri-apps/tauri-action@v0
+      #  env:
+      #    NODE_OPTIONS: "--max_old_space_size=4096"
+      #  with:
+      #    tauriScript: pnpm
+      #    args: --target x86_64-unknown-freebsd
+      - name: 编译
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
-        with:
-          tauriScript: pnpm
-          args: --target x86_64-unknown-freebsd -b pkg
+        run: |
+          pnpm tauri build --target x86_64-unknown-freebsd
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: x86_64-unknown-freebsd
-          path: src-tauri/target/x86_64-unknown-freebsd/release/bundle/pkg/*.pkg
+          path: src-tauri/target/x86_64-unknown-freebsd/release/bundle
       
