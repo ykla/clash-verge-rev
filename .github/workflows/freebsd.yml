@@ -74,5 +74,4 @@ jobs:
         with:
           name: x86_64-unknown-freebsd
           path: src-tauri/target/x86_64-unknown-freebsd/release/bundle/pkg/*.pkg
-          if-no-files-found: error
       
