@@ -36,7 +36,7 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install clang lld libc6-dev-amd64-cross
+          sudo apt-get install clang lld libc6-dev-amd64-cross pkg-config
           sudo apt-get install -y libxslt1.1 libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       - name: 安装 FreeBSD 头文件和库
@@ -44,6 +44,9 @@ jobs:
           wget https://download.freebsd.org/ftp/releases/amd64/amd64/13.4-RELEASE/base.txz
           mkdir freebsd-sysroot
           tar -xf base.txz -C freebsd-sysroot
+          echo "PKG_CONFIG_SYSROOT_DIR=$PWD/freebsd-sysroot" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$PWD/freebsd-sysroot/usr/lib/pkgconfig:$PWD/freebsd-sysroot/usr/share/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
 
       - name: Install Node
         uses: actions/setup-node@v4
@@ -73,11 +76,6 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
-          cargo install pkg-config
-          export PKG_CONFIG=$(which pkg-config)
-          export PKG_CONFIG_SYSROOT_DIR=./freebsd-sysroot
-          export PKG_CONFIG_PATH=./freebsd-sysroot/usr/lib/pkgconfig:./freebsd-sysroot/usr/share/pkgconfig
-
           pnpm tauri build --target x86_64-unknown-freebsd
 
       - name: Upload Artifacts
