@@ -73,6 +73,11 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
+          cargo install pkg-config-wrapper
+          export PKG_CONFIG=$(which pkg-config-wrapper)
+          export PKG_CONFIG_SYSROOT_DIR=/opt/freebsd-sysroot
+          export PKG_CONFIG_PATH=/opt/freebsd-sysroot/usr/lib/pkgconfig:/opt/freebsd-sysroot/usr/share/pkgconfig
+
           pnpm tauri build --target x86_64-unknown-freebsd
 
       - name: Upload Artifacts
