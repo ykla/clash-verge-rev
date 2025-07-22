@@ -5,6 +5,11 @@ on: [workflow_dispatch]
 jobs:
   alpha-x64-freebsd:
       runs-on: ubuntu-latest
+      env:
+        CARGO_TERM_COLOR: always
+        LANG: zh_CN.UTF-8
+        LANGUAGE: zh_CN:zh
+        LC_ALL: zh_CN.UTF-8
       steps:
       - uses: actions/checkout@v4
         with:
@@ -21,7 +26,12 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-          save-if: false  
+          save-if: false
+          
+      - name: 汉化
+        run: |
+          sudo apt-get update
+          sudo apt-get install language-pack-zh-hans -y
     
       - name: 安装依赖
         run: |
@@ -34,6 +44,16 @@ jobs:
           wget https://download.freebsd.org/ftp/releases/amd64/amd64/13.4-RELEASE/base.txz
           mkdir freebsd-sysroot
           tar -xf base.txz -C freebsd-sysroot
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
       
       - name: Pnpm install and check
         run: |
