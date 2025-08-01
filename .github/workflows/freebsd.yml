@@ -36,12 +36,12 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install clang lld libc6-dev-amd64-cross pkg-config
+          sudo apt-get install -y clang lld libc6-dev-amd64-cross pkg-config
           sudo apt-get install -y libxslt1.1 libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
 
       - name: 安装 FreeBSD 头文件和库
         run: |
-          wget https://download.freebsd.org/ftp/releases/amd64/amd64/13.4-RELEASE/base.txz
+          wget https://download.freebsd.org/ftp/releases/amd64/amd64/14.3-RELEASE/base.txz
           mkdir freebsd-sysroot
           tar -xf base.txz -C freebsd-sysroot
           echo "PKG_CONFIG_SYSROOT_DIR=$PWD/freebsd-sysroot" >> $GITHUB_ENV
