@@ -4,8 +4,8 @@ use crate::{
         handle,
         service::{self},
     },
-    logging, logging_error,
-    module::mihomo::MihomoManager,
+    ipc::IpcManager,
+    logging, logging_error, singleton_lazy,
     utils::{
         dirs,
         help::{self},
@@ -14,7 +14,6 @@ use crate::{
 };
 use anyhow::Result;
 use chrono::Local;
-use once_cell::sync::OnceCell;
 use std::{
     fmt,
     fs::{create_dir_all, File},
@@ -413,10 +412,7 @@ impl CoreManager {
             logging_error!(Type::Core, true, "{}", msg);
             msg
         });
-        match MihomoManager::global()
-            .put_configs_force(run_path_str?)
-            .await
-        {
+        match IpcManager::global().put_configs_force(run_path_str?).await {
             Ok(_) => {
                 Config::runtime().apply();
                 logging!(info, Type::Core, true, "Configuration updated successfully");
@@ -826,14 +822,19 @@ impl CoreManager {
     }
 }
 
-impl CoreManager {
-    pub fn global() -> &'static CoreManager {
-        static CORE_MANAGER: OnceCell<CoreManager> = OnceCell::new();
-        CORE_MANAGER.get_or_init(|| CoreManager {
+impl Default for CoreManager {
+    fn default() -> Self {
+        CoreManager {
             running: Arc::new(Mutex::new(RunningMode::NotRunning)),
             child_sidecar: Arc::new(Mutex::new(None)),
-        })
+        }
     }
+}
+
+// Use simplified singleton_lazy macro
+singleton_lazy!(CoreManager, CORE_MANAGER, CoreManager::default);
+
+impl CoreManager {
     // 当服务安装失败时的回退逻辑
     async fn attempt_service_init(&self) -> Result<()> {
         if service::check_service_needs_reinstall().await {

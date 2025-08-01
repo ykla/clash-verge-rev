@@ -1,14 +1,16 @@
 use anyhow::Result;
-use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use reqwest::{Client, ClientBuilder, Proxy, RequestBuilder, Response};
 use std::{
-    sync::{Arc, Once},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Once,
+    },
     time::{Duration, Instant},
 };
 use tokio::runtime::{Builder, Runtime};
 
-use crate::{config::Config, logging, utils::logging::Type};
+use crate::{config::Config, logging, singleton_lazy, utils::logging::Type};
 
 // HTTP2 相关
 const H2_CONNECTION_WINDOW_SIZE: u32 = 1024 * 1024;
@@ -24,17 +26,16 @@ const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(15);
 /// 网络管理器
 pub struct NetworkManager {
     runtime: Arc<Runtime>,
-    self_proxy_client: Arc<Mutex<Option<Client>>>,
-    system_proxy_client: Arc<Mutex<Option<Client>>>,
-    no_proxy_client: Arc<Mutex<Option<Client>>>,
+    self_proxy_client: Mutex<Option<Client>>,
+    system_proxy_client: Mutex<Option<Client>>,
+    no_proxy_client: Mutex<Option<Client>>,
     init: Once,
-    last_connection_error: Arc<Mutex<Option<(Instant, String)>>>,
-    connection_error_count: Arc<Mutex<usize>>,
+    last_connection_error: Mutex<Option<(Instant, String)>>,
+    connection_error_count: AtomicUsize,
 }
 
-lazy_static! {
-    static ref NETWORK_MANAGER: NetworkManager = NetworkManager::new();
-}
+// Use singleton_lazy macro to replace lazy_static!
+singleton_lazy!(NetworkManager, NETWORK_MANAGER, NetworkManager::new);
 
 impl NetworkManager {
     fn new() -> Self {
@@ -49,17 +50,13 @@ impl NetworkManager {
 
         NetworkManager {
             runtime: Arc::new(runtime),
-            self_proxy_client: Arc::new(Mutex::new(None)),
-            system_proxy_client: Arc::new(Mutex::new(None)),
-            no_proxy_client: Arc::new(Mutex::new(None)),
+            self_proxy_client: Mutex::new(None),
+            system_proxy_client: Mutex::new(None),
+            no_proxy_client: Mutex::new(None),
             init: Once::new(),
-            last_connection_error: Arc::new(Mutex::new(None)),
-            connection_error_count: Arc::new(Mutex::new(0)),
+            last_connection_error: Mutex::new(None),
+            connection_error_count: AtomicUsize::new(0),
         }
-    }
-
-    pub fn global() -> &'static Self {
-        &NETWORK_MANAGER
     }
 
     /// 初始化网络客户端
@@ -79,7 +76,7 @@ impl NetworkManager {
                     .build()
                     .expect("Failed to build no_proxy client");
 
-                let mut no_proxy_guard = NETWORK_MANAGER.no_proxy_client.lock();
+                let mut no_proxy_guard = NetworkManager::global().no_proxy_client.lock();
                 *no_proxy_guard = Some(no_proxy_client);
 
                 logging!(info, Type::Network, true, "网络管理器初始化完成");
@@ -91,12 +88,11 @@ impl NetworkManager {
         let mut last_error = self.last_connection_error.lock();
         *last_error = Some((Instant::now(), error.to_string()));
 
-        let mut error_count = self.connection_error_count.lock();
-        *error_count += 1;
+        self.connection_error_count.fetch_add(1, Ordering::Relaxed);
     }
 
     fn should_reset_clients(&self) -> bool {
-        let error_count = *self.connection_error_count.lock();
+        let error_count = self.connection_error_count.load(Ordering::Relaxed);
         let last_error = self.last_connection_error.lock();
 
         if error_count > 5 {
@@ -126,10 +122,7 @@ impl NetworkManager {
             let mut client = self.no_proxy_client.lock();
             *client = None;
         }
-        {
-            let mut error_count = self.connection_error_count.lock();
-            *error_count = 0;
-        }
+        self.connection_error_count.store(0, Ordering::Relaxed);
     }
 
     /// 创建带有自定义选项的HTTP请求
